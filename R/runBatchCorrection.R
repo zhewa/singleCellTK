@@ -7,7 +7,7 @@
 #' @param useAssay A single character indicating the name of the assay requiring
 #' batch correction. Default \code{"logcounts"}.
 #' @param batch A single character indicating a field in
-#' \code{\link[SummarizedExperiment]{colData}} that annotates the batches.
+#' \code{\link{colData}} that annotates the batches.
 #' Default \code{"batch"}.
 #' @param reducedDimName A single character. The name for the corrected
 #' low-dimensional representation. Will be saved to \code{reducedDim(inSCE)}.
@@ -71,7 +71,7 @@ runBBKNN <-function(inSCE, useAssay = 'logcounts', batch = 'batch',
 #' @param useAssay A single character indicating the name of the assay requiring
 #' batch correction. Default \code{"logcounts"}.
 #' @param batch A single character indicating a field in
-#' \code{\link[SummarizedExperiment]{colData}} that annotates the batches.
+#' \code{\link{colData}} that annotates the batches.
 #' Default \code{"batch"}.
 #' @param par.prior A logical scalar. TRUE indicates parametric adjustments
 #' will be used, FALSE indicates non-parametric adjustments will be used.
@@ -83,7 +83,7 @@ runBBKNN <-function(inSCE, useAssay = 'logcounts', batch = 'batch',
 #' @param ref.batch If given, will use the selected batch as a reference for
 #' batch adjustment. Default \code{NULL}.
 #' @param assayName A single characeter. The name for the corrected assay. Will
-#' be saved to \code{\link[SummarizedExperiment]{assay}}. Default
+#' be saved to \code{\link{assay}}. Default
 #' \code{"ComBat"}.
 #' @return The input \linkS4class{SingleCellExperiment} object with
 #' \code{assay(inSCE, assayName)} updated.
@@ -143,7 +143,7 @@ runComBat <- function(inSCE, useAssay = "logcounts", batch = 'batch',
 #' batch correction. Default \code{"logcounts"}. Alternatively, see
 #' \code{pcInput} parameter.
 #' @param batch A single character indicating a field in
-#' \code{\link[SummarizedExperiment]{colData}} that annotates the batches.
+#' \code{\link{colData}} that annotates the batches.
 #' Default \code{"batch"}.
 #' @param reducedDimName A single character. The name for the corrected
 #' low-dimensional representation. Will be saved to \code{reducedDim(inSCE)}.
@@ -200,157 +200,157 @@ runFastMNN <- function(inSCE, useAssay = "logcounts",
   return(inSCE)
 }
 
-#' Apply Harmony batch effect correction method to SingleCellExperiment object
-#'
-#' Harmony is an algorithm that projects cells into a shared embedding in which
-#' cells group by cell type rather than dataset-specific conditions.
-#' @param inSCE \linkS4class{SingleCellExperiment} inherited object. Required.
-#' @param useAssay A single character indicating the name of the assay requiring
-#' batch correction. Default \code{"logcounts"}.
-#' @param batch A single character indicating a field in
-#' \code{\link[SummarizedExperiment]{colData}} that annotates the batches.
-#' Default \code{"batch"}.
-#' @param reducedDimName A single character. The name for the corrected
-#' low-dimensional representation. Will be saved to \code{reducedDim(inSCE)}.
-#' Default \code{"HARMONY"}.
-#' @param pcInput A logical scalar. Whether to use a low-dimension matrix for
-#' batch effect correction. If \code{TRUE}, \code{useAssay} will be searched
-#' from \code{reducedDimNames(inSCE)}. Default \code{FALSE}.
-#' @param nComponents An integer. The number of principle components or
-#' dimensionality to generate in the resulting matrix. If \code{pcInput} is set
-#' to \code{TRUE}, the output dimension will follow the low-dimension matrix,
-#' so this argument will be ignored. Default \code{50L}.
-#' @param nIter An integer. The max number of iterations to perform. Default
-#' \code{10L}.
-#' @param theta A Numeric scalar. Diversity clustering penalty parameter,
-#' Larger value results in more diverse clusters. Default \code{5}
-#' @return The input \linkS4class{SingleCellExperiment} object with
-#' \code{reducedDim(inSCE, reducedDimName)} updated.
-#' @export
-#' @references Ilya Korsunsky, et al., 2019
-#' @examples
-#' data('sceBatches', package = 'singleCellTK')
-#' sceCorr <- runHarmony(sceBatches, nComponents = 10L)
-runHarmony <- function(inSCE, useAssay = "logcounts", pcInput = FALSE,
-                       batch = "batch", reducedDimName = "HARMONY",
-                       nComponents = 50L, theta = 5, nIter = 10L){
-  if (!requireNamespace("harmony", quietly = TRUE)) {
-    stop("The Harmony package is required to run this function. ",
-         "Install harmony with: ",
-         "devtools::install_github('joshua-d-campbell/harmony') ",
-         call. = FALSE)
-  }
-  ## Input check
-  if(!inherits(inSCE, "SingleCellExperiment")){
-    stop("\"inSCE\" should be a SingleCellExperiment Object.")
-  }
-  if(pcInput){
-    if(!useAssay %in% SingleCellExperiment::reducedDimNames(inSCE)) {
-      stop(paste("\"useAssay\" (reducedDim) name: ", useAssay, " not found."))
-    }
-  } else {
-    if(!useAssay %in% SummarizedExperiment::assayNames(inSCE)) {
-      stop(paste("\"useAssay\" (assay) name: ", useAssay, " not found."))
-    }
-  }
-  if(!batch %in% names(SummarizedExperiment::colData(inSCE))){
-    stop(paste("\"batch\" name:", batch, "not found"))
-  }
-  reducedDimName <- gsub(' ', '_', reducedDimName)
-  nComponents <- as.integer(nComponents)
-  nIter <- as.integer(nIter)
-  ## Run algorithm
-  batchCol <- SummarizedExperiment::colData(inSCE)[[batch]]
-  if(pcInput){
-    mat <- SingleCellExperiment::reducedDim(inSCE, useAssay)
-  } else{
-    sceTmp <- scater::runPCA(inSCE, exprs_values = useAssay,
-                             ncomponents = nComponents)
-    mat <- SingleCellExperiment::reducedDim(sceTmp, 'PCA')
-  }
-  h <- harmony::HarmonyMatrix(mat, batchCol, do_pca = FALSE,
-                              theta = theta, max.iter.harmony = nIter)
-  SingleCellExperiment::reducedDim(inSCE, reducedDimName) <- h
-  return(inSCE)
-}
+# #' Apply Harmony batch effect correction method to SingleCellExperiment object
+# #'
+# #' Harmony is an algorithm that projects cells into a shared embedding in which
+# #' cells group by cell type rather than dataset-specific conditions.
+# #' @param inSCE \linkS4class{SingleCellExperiment} inherited object. Required.
+# #' @param useAssay A single character indicating the name of the assay requiring
+# #' batch correction. Default \code{"logcounts"}.
+# #' @param batch A single character indicating a field in
+# #' \code{\link{colData}} that annotates the batches.
+# #' Default \code{"batch"}.
+# #' @param reducedDimName A single character. The name for the corrected
+# #' low-dimensional representation. Will be saved to \code{reducedDim(inSCE)}.
+# #' Default \code{"HARMONY"}.
+# #' @param pcInput A logical scalar. Whether to use a low-dimension matrix for
+# #' batch effect correction. If \code{TRUE}, \code{useAssay} will be searched
+# #' from \code{reducedDimNames(inSCE)}. Default \code{FALSE}.
+# #' @param nComponents An integer. The number of principle components or
+# #' dimensionality to generate in the resulting matrix. If \code{pcInput} is set
+# #' to \code{TRUE}, the output dimension will follow the low-dimension matrix,
+# #' so this argument will be ignored. Default \code{50L}.
+# #' @param nIter An integer. The max number of iterations to perform. Default
+# #' \code{10L}.
+# #' @param theta A Numeric scalar. Diversity clustering penalty parameter,
+# #' Larger value results in more diverse clusters. Default \code{5}
+# #' @return The input \linkS4class{SingleCellExperiment} object with
+# #' \code{reducedDim(inSCE, reducedDimName)} updated.
+# #' @export
+# #' @references Ilya Korsunsky, et al., 2019
+# #' @examples
+# #' data('sceBatches', package = 'singleCellTK')
+# #' sceCorr <- runHarmony(sceBatches, nComponents = 10L)
+# runHarmony <- function(inSCE, useAssay = "logcounts", pcInput = FALSE,
+#                        batch = "batch", reducedDimName = "HARMONY",
+#                        nComponents = 50L, theta = 5, nIter = 10L){
+#   if (!requireNamespace("harmony", quietly = TRUE)) {
+#     stop("The Harmony package is required to run this function. ",
+#          "Install harmony with: ",
+#          "devtools::install_github('joshua-d-campbell/harmony') ",
+#          call. = FALSE)
+#   }
+#   ## Input check
+#   if(!inherits(inSCE, "SingleCellExperiment")){
+#     stop("\"inSCE\" should be a SingleCellExperiment Object.")
+#   }
+#   if(pcInput){
+#     if(!useAssay %in% SingleCellExperiment::reducedDimNames(inSCE)) {
+#       stop(paste("\"useAssay\" (reducedDim) name: ", useAssay, " not found."))
+#     }
+#   } else {
+#     if(!useAssay %in% SummarizedExperiment::assayNames(inSCE)) {
+#       stop(paste("\"useAssay\" (assay) name: ", useAssay, " not found."))
+#     }
+#   }
+#   if(!batch %in% names(SummarizedExperiment::colData(inSCE))){
+#     stop(paste("\"batch\" name:", batch, "not found"))
+#   }
+#   reducedDimName <- gsub(' ', '_', reducedDimName)
+#   nComponents <- as.integer(nComponents)
+#   nIter <- as.integer(nIter)
+#   ## Run algorithm
+#   batchCol <- SummarizedExperiment::colData(inSCE)[[batch]]
+#   if(pcInput){
+#     mat <- SingleCellExperiment::reducedDim(inSCE, useAssay)
+#   } else{
+#     sceTmp <- scater::runPCA(inSCE, exprs_values = useAssay,
+#                              ncomponents = nComponents)
+#     mat <- SingleCellExperiment::reducedDim(sceTmp, 'PCA')
+#   }
+#   h <- harmony::HarmonyMatrix(mat, batchCol, do_pca = FALSE,
+#                               theta = theta, max.iter.harmony = nIter)
+#   SingleCellExperiment::reducedDim(inSCE, reducedDimName) <- h
+#   return(inSCE)
+# }
 
-#' Apply LIGER batch effect correction method to SingleCellExperiment object
-#'
-#' LIGER relies on integrative non-negative matrix factorization to identify
-#' shared and dataset-specific factors.
-#' @param inSCE \linkS4class{SingleCellExperiment} inherited object. Required.
-#' @param useAssay A single character indicating the name of the assay requiring
-#' batch correction. Default \code{"logcounts"}.
-#' @param batch A single character indicating a field in
-#' \code{\link[SummarizedExperiment]{colData}} that annotates the batches.
-#' Default \code{"batch"}.
-#' @param reducedDimName A single character. The name for the corrected
-#' low-dimensional representation. Will be saved to \code{reducedDim(inSCE)}.
-#' Default \code{"LIGER"}.
-#' @param nComponents An integer. The number of principle components or
-#' dimensionality to generate in the resulting matrix. Default \code{20L}.
-#' @param lambda A numeric scalar. Algorithmic parameter, the penalty
-#' parameter which limits the dataset-specific component of the factorization.
-#' Default \code{5.0}.
-#' @param resolution A numeric scalar. Algorithmic paramter, the clustering
-#' resolution, increasing this increases the number of communities detected.
-#' Default \code{1.0}
-#' @return The input \linkS4class{SingleCellExperiment} object with
-#' \code{reducedDim(inSCE, reducedDimName)} updated.
-#' @export
-#' @references Joshua Welch, et al., 2018
-#' @examples
-#' \dontrun{
-#' data('sceBatches', package = 'singleCellTK')
-#' sceCorr <- runLIGER(sceBatches)
-#' }
-runLIGER <- function(inSCE, useAssay = 'logcounts', batch = 'batch',
-                     reducedDimName = 'LIGER', nComponents = 20L, lambda = 5.0,
-                     resolution = 1.0){
-  if (!requireNamespace("liger", quietly = TRUE)) {
-    stop("The Liger package is required to run this function. ",
-         "Install liger with: ",
-         "devtools::install_github('joshua-d-campbell/liger') \n",
-         "NOTICE that the one on cran/BiocManager is not what we need.",
-         call. = FALSE)
-  }
-  if (!exists('createLiger', where=asNamespace('liger'), mode='function')) {
-    stop("You are using the wrong source of Liger, please reinstall with: ",
-         "devtools::install_github('joshua-d-campbell/liger') \n",
-         "NOTICE that the one on cran/BiocManager is not what we need.",
-         call. = FALSE)
-  }
-  ## Input check
-  if(!inherits(inSCE, "SingleCellExperiment")){
-    stop("\"inSCE\" should be a SingleCellExperiment Object.")
-  }
-  if(!useAssay %in% SummarizedExperiment::assayNames(inSCE)) {
-    stop(paste("\"useAssay\" (assay) name: ", useAssay, " not found"))
-  }
-  if(!batch %in% names(SummarizedExperiment::colData(inSCE))){
-    stop(paste("\"batch\" name:", batch, "not found"))
-  }
-  reducedDimName <- gsub(' ', '_', reducedDimName)
+# #' Apply LIGER batch effect correction method to SingleCellExperiment object
+# #'
+# #' LIGER relies on integrative non-negative matrix factorization to identify
+# #' shared and dataset-specific factors.
+# #' @param inSCE \linkS4class{SingleCellExperiment} inherited object. Required.
+# #' @param useAssay A single character indicating the name of the assay requiring
+# #' batch correction. Default \code{"logcounts"}.
+# #' @param batch A single character indicating a field in
+# #' \code{\link{colData}} that annotates the batches.
+# #' Default \code{"batch"}.
+# #' @param reducedDimName A single character. The name for the corrected
+# #' low-dimensional representation. Will be saved to \code{reducedDim(inSCE)}.
+# #' Default \code{"LIGER"}.
+# #' @param nComponents An integer. The number of principle components or
+# #' dimensionality to generate in the resulting matrix. Default \code{20L}.
+# #' @param lambda A numeric scalar. Algorithmic parameter, the penalty
+# #' parameter which limits the dataset-specific component of the factorization.
+# #' Default \code{5.0}.
+# #' @param resolution A numeric scalar. Algorithmic paramter, the clustering
+# #' resolution, increasing this increases the number of communities detected.
+# #' Default \code{1.0}
+# #' @return The input \linkS4class{SingleCellExperiment} object with
+# #' \code{reducedDim(inSCE, reducedDimName)} updated.
+# #' @export
+# #' @references Joshua Welch, et al., 2018
+# #' @examples
+# #' \dontrun{
+# #' data('sceBatches', package = 'singleCellTK')
+# #' sceCorr <- runLIGER(sceBatches)
+# #' }
+# runLIGER <- function(inSCE, useAssay = 'logcounts', batch = 'batch',
+#                      reducedDimName = 'LIGER', nComponents = 20L, lambda = 5.0,
+#                      resolution = 1.0){
+#   if (!requireNamespace("liger", quietly = TRUE)) {
+#     stop("The Liger package is required to run this function. ",
+#          "Install liger with: ",
+#          "devtools::install_github('joshua-d-campbell/liger') \n",
+#          "NOTICE that the one on cran/BiocManager is not what we need.",
+#          call. = FALSE)
+#   }
+#   if (!exists('createLiger', where=asNamespace('liger'), mode='function')) {
+#     stop("You are using the wrong source of Liger, please reinstall with: ",
+#          "devtools::install_github('joshua-d-campbell/liger') \n",
+#          "NOTICE that the one on cran/BiocManager is not what we need.",
+#          call. = FALSE)
+#   }
+#   ## Input check
+#   if(!inherits(inSCE, "SingleCellExperiment")){
+#     stop("\"inSCE\" should be a SingleCellExperiment Object.")
+#   }
+#   if(!useAssay %in% SummarizedExperiment::assayNames(inSCE)) {
+#     stop(paste("\"useAssay\" (assay) name: ", useAssay, " not found"))
+#   }
+#   if(!batch %in% names(SummarizedExperiment::colData(inSCE))){
+#     stop(paste("\"batch\" name:", batch, "not found"))
+#   }
+#   reducedDimName <- gsub(' ', '_', reducedDimName)
 
-  ## Run algorithm
-  batchCol <- SummarizedExperiment::colData(inSCE)[[batch]]
-  batches <- unique(batchCol)
-  batchMatrices <- list()
-  for(i in seq_along(batches)){
-    b <- batches[i]
-    batchMatrices[[b]] <-
-      SummarizedExperiment::assay(inSCE, useAssay)[,batchCol == b]
-  }
-  ligerex <- liger::createLiger(batchMatrices)
-  ligerex <- liger::normalize(ligerex)
-  ligerex <- liger::selectGenes(ligerex)
-  ligerex <- liger::scaleNotCenter(ligerex)
-  ligerex <- liger::optimizeALS(ligerex, k = nComponents, lambda = lambda,
-                                resolution = resolution)
-  ligerex <- liger::quantile_norm(ligerex)
-  SingleCellExperiment::reducedDim(inSCE, reducedDimName) <- ligerex@H.norm
-  return(inSCE)
-}
+#   ## Run algorithm
+#   batchCol <- SummarizedExperiment::colData(inSCE)[[batch]]
+#   batches <- unique(batchCol)
+#   batchMatrices <- list()
+#   for(i in seq_along(batches)){
+#     b <- batches[i]
+#     batchMatrices[[b]] <-
+#       SummarizedExperiment::assay(inSCE, useAssay)[,batchCol == b]
+#   }
+#   ligerex <- liger::createLiger(batchMatrices)
+#   ligerex <- liger::normalize(ligerex)
+#   ligerex <- liger::selectGenes(ligerex)
+#   ligerex <- liger::scaleNotCenter(ligerex)
+#   ligerex <- liger::optimizeALS(ligerex, k = nComponents, lambda = lambda,
+#                                 resolution = resolution)
+#   ligerex <- liger::quantile_norm(ligerex)
+#   SingleCellExperiment::reducedDim(inSCE, reducedDimName) <- ligerex@H.norm
+#   return(inSCE)
+# }
 
 #' Apply Limma's batch effect correction method to SingleCellExperiment object
 #'
@@ -360,10 +360,10 @@ runLIGER <- function(inSCE, useAssay = 'logcounts', batch = 'batch',
 #' @param useAssay A single character indicating the name of the assay requiring
 #' batch correction. Default \code{"logcounts"}.
 #' @param batch A single character indicating a field in
-#' \code{\link[SummarizedExperiment]{colData}} that annotates the batches.
+#' \code{\link{colData}} that annotates the batches.
 #' Default \code{"batch"}.
 #' @param assayName A single characeter. The name for the corrected assay. Will
-#' be saved to \code{\link[SummarizedExperiment]{assay}}. Default
+#' be saved to \code{\link{assay}}. Default
 #' \code{"LIMMA"}.
 #' @return The input \linkS4class{SingleCellExperiment} object with
 #' \code{assay(inSCE, assayName)} updated.
@@ -371,7 +371,9 @@ runLIGER <- function(inSCE, useAssay = 'logcounts', batch = 'batch',
 #' @references Gordon K Smyth, et al., 2003
 #' @examples
 #' data('sceBatches', package = 'singleCellTK')
+#' \dontrun{
 #' sceCorr <- runLimmaBC(sceBatches)
+#' }
 runLimmaBC <- function(inSCE, useAssay = "logcounts", assayName = "LIMMA",
                        batch = "batch") {
   ## Input check
@@ -408,7 +410,7 @@ runLimmaBC <- function(inSCE, useAssay = "logcounts", assayName = "LIMMA",
 #' @param useAssay A single character indicating the name of the assay requiring
 #' batch correction. Default \code{"logcounts"}.
 #' @param batch A single character indicating a field in
-#' \code{\link[SummarizedExperiment]{colData}} that annotates the batches.
+#' \code{\link{colData}} that annotates the batches.
 #' Default \code{"batch"}.
 #' @param k An integer. Specifies the number of nearest neighbours to
 #' consider when defining MNN pairs. This should be interpreted as the minimum
@@ -423,7 +425,7 @@ runLimmaBC <- function(inSCE, useAssay = "logcounts", assayName = "LIMMA",
 #' which may be more accurate but comes at the cost of precision. Default
 #' \code{0.1}.
 #' @param assayName A single characeter. The name for the corrected assay. Will
-#' be saved to \code{\link[SummarizedExperiment]{assay}}. Default
+#' be saved to \code{\link{assay}}. Default
 #' \code{"MNN"}.
 #' @return The input \linkS4class{SingleCellExperiment} object with
 #' \code{assay(inSCE, assayName)} updated.
@@ -431,7 +433,9 @@ runLimmaBC <- function(inSCE, useAssay = "logcounts", assayName = "LIMMA",
 #' @references Lun ATL, et al., 2016 & 2018
 #' @examples
 #' data('sceBatches', package = 'singleCellTK')
+#' \dontrun{
 #' sceCorr <- runMNNCorrect(sceBatches)
+#' }
 runMNNCorrect <- function(inSCE, useAssay = 'logcounts', batch = 'batch',
                           assayName = 'MNN', k = 20L, sigma = 0.1){
   ## Input check
@@ -467,7 +471,7 @@ runMNNCorrect <- function(inSCE, useAssay = 'logcounts', batch = 'batch',
 #' @param useAssay A single character indicating the name of the assay requiring
 #' batch correction. Default \code{"logcounts"}.
 #' @param batch A single character indicating a field in
-#' \code{\link[SummarizedExperiment]{colData}} that annotates the batches.
+#' \code{\link{colData}} that annotates the batches.
 #' Default \code{"batch"}.
 #' @param SIGMA A numeric scalar. Algorithmic parameter, correction smoothing
 #' parameter on Gaussian kernel. Default \code{15}.
@@ -476,7 +480,7 @@ runMNNCorrect <- function(inSCE, useAssay = 'logcounts', batch = 'batch',
 #' @param KNN An integer. Algorithmic parameter, number of nearest neighbors to
 #' use for matching. Default \code{20L}.
 #' @param assayName A single characeter. The name for the corrected assay. Will
-#' be saved to \code{\link[SummarizedExperiment]{assay}}. Default
+#' be saved to \code{\link{assay}}. Default
 #' \code{"SCANORAMA"}.
 #' @return The input \linkS4class{SingleCellExperiment} object with
 #' \code{assay(inSCE, assayName)} updated.
@@ -558,7 +562,7 @@ integrated = integrated[:, orderIdx]
 #' @param useAssay A single character indicating the name of the assay requiring
 #' batch correction. Default \code{"logcounts"}.
 #' @param batch A single character indicating a field in
-#' \code{\link[SummarizedExperiment]{colData}} that annotates the batches.
+#' \code{\link{colData}} that annotates the batches.
 #' Default \code{"batch"}.
 #' @param kmeansK An integer vector. Indicating the kmeans' K-value for each
 #' batch (i.e. how many subclusters in each batch should exist), in order to
@@ -576,7 +580,7 @@ integrated = integrated[:, orderIdx]
 #' @param nCores An integer. The number of cores of processors to allocate for
 #' the task. Default \code{1L}.
 #' @param assayName A single characeter. The name for the corrected assay. Will
-#' be saved to \code{\link[SummarizedExperiment]{assay}}. Default
+#' be saved to \code{\link{assay}}. Default
 #' \code{"scMerge"}.
 #' @return The input \linkS4class{SingleCellExperiment} object with
 #' \code{assay(inSCE, assayName)} updated.
@@ -584,7 +588,9 @@ integrated = integrated[:, orderIdx]
 #' @references Hoa, et al., 2020
 #' @examples
 #' data('sceBatches', package = 'singleCellTK')
+#' \dontrun{
 #' sceCorr <- runSCMerge(sceBatches)
+#' }
 runSCMerge <- function(inSCE, useAssay = "logcounts", batch = 'batch',
                        assayName = "scMerge", seg = NULL, kmeansK = NULL,
                        cellType = 'cell_type',
@@ -672,7 +678,7 @@ runSCMerge <- function(inSCE, useAssay = "logcounts", batch = 'batch',
 #' batch correction. Note that ZINBWaVE works for counts (integer) input rather
 #' than logcounts that other methods prefer. Default \code{"counts"}.
 #' @param batch A single character indicating a field in
-#' \code{\link[SummarizedExperiment]{colData}} that annotates the batches.
+#' \code{\link{colData}} that annotates the batches.
 #' Default \code{"batch"}.
 #' @param nHVG An integer. Number of highly variable genes to use when fitting
 #' the model. Default \code{1000L}.
@@ -691,8 +697,8 @@ runSCMerge <- function(inSCE, useAssay = "logcounts", batch = 'batch',
 #' @export
 #' @references Pollen, Alex A et al., 2014
 #' @examples
+#' data('sceBatches', package = 'singleCellTK')
 #' \dontrun{
-#'     data('sceBatches', package = 'singleCellTK')
 #'     sceCorr <- runZINBWaVE(sceBatches, nIter = 5)
 #' }
 runZINBWaVE <- function(inSCE, useAssay = 'counts', batch = 'batch',
@@ -721,8 +727,10 @@ runZINBWaVE <- function(inSCE, useAssay = 'counts', batch = 'batch',
     names(vars) <- rownames(inSCE)
     vars <- sort(vars, decreasing = TRUE)
     tmpSCE <- inSCE[names(vars)[seq_len(nHVG)],]
+  } else {
+    tmpSCE <- inSCE
   }
-  epsilon <- min(nrow(inSCE), epsilon)
+  epsilon <- min(nrow(tmpSCE), epsilon)
   tmpSCE <- zinbwave::zinbwave(tmpSCE, K = nComponents, epsilon = epsilon,
                                which_assay = useAssay,
                                X = paste('~', batch, sep = ''),

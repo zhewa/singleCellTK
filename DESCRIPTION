@@ -1,8 +1,8 @@
 Package: singleCellTK
 Type: Package
 Title: Comprehensive and Interactive Analysis of Single Cell RNA-Seq Data
-Version: 1.9.1
-Authors@R: c(person(given="David", family="Jenkins", email="dfj@bu.edu", role=c("aut","cre"),
+Version: 1.99.1
+Authors@R: c(person(given="David", family="Jenkins", email="dfj@bu.edu", role=c("aut"),
                     comment = c(ORCID = "0000-0002-7451-4288")),
              person(given="Vidya", family="Akavoor", email="vidyaap@bu.edu", role=c("aut")),
              person(given="Salam", family="Alabdullatif", email="salamha@bu.edu", role=c("aut")),
@@ -14,7 +14,7 @@ Authors@R: c(person(given="David", family="Jenkins", email="dfj@bu.edu", role=c(
              person(given="Tyler", family="Faits", email="tfaits@bu.edu", role=c("aut")),
              person(given="Rui", family="Hong", email="rzhong@bu.edu", role=c("aut")),
              person(given=c("Mohammed", "Muzamil"), family="Khan", email="mmkhan@bu.edu", role=c("aut")),
-             person(given="Yusuke", family="Koga", email="ykoga07@bu.edu", role=c("aut")),
+             person(given="Yusuke", family="Koga", email="ykoga07@bu.edu", role=c("aut", "cre")),
              person(given="Anastasia", family="Leshchyk", email="aleshchk@bu.edu", role=c("aut")),
              person(given="Irzam", family="Sarfraz", email="irzam9095@gmail.com", role=c("aut")),
              person(given="Yichen", family="Wang", email="wangych@bu.edu", role=c("aut")),
@@ -49,6 +49,7 @@ Imports:
     DESeq2,
     dplyr,
     DT,
+    ExperimentHub,
     fields,
     ggplot2,
     ggplotify,
@@ -104,7 +105,8 @@ Imports:
     yaml,
     rmarkdown,
     magrittr,
-    kableExtra
+    kableExtra,
+    scDblFinder
 RoxygenNote: 7.1.1
 Suggests:
     testthat,
@@ -116,9 +118,7 @@ Suggests:
     xtable,
     spelling,
     org.Mm.eg.db,
-    stringr,
-    harmony,
-    liger
+    stringr
 VignetteBuilder: knitr
 URL: https://compbiomed.github.io/sctk_docs/
 BugReports: https://github.com/compbiomed/singleCellTK/issues

@@ -124,7 +124,7 @@ If default, it is set to 30. Default \code{NULL}.}
 \value{
 A \link[SingleCellExperiment]{SingleCellExperiment} object with
  \code{scrub_doublets} output appended to the
- \link[SummarizedExperiment]{colData} slot. The columns include
+ \link{colData} slot. The columns include
  \emph{scrublet_score} and \emph{scrublet_call}.
 }
 \description{
@@ -138,6 +138,8 @@ A wrapper function that calls \code{scrub_doublets} from python
 }
 \examples{
 data(scExample, package = "singleCellTK")
+\dontrun{
 sce <- subsetSCECols(sce, colData = "type != 'EmptyDroplet'")
 sce <- runScrublet(sce)
+}
 }
